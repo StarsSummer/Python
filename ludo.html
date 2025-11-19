@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飞行棋游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(15, 40px);
+            grid-template-rows: repeat(15, 40px);
+            gap: 2px;
+            margin: 0 auto 30px;
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .cell {
+            width: 40px;
+            height: 40px;
+            border: 1px solid #ccc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            font-weight: bold;
+            position: relative;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .cell:hover {
+            transform: scale(1.05);
+        }
+
+        .red-home { background: #ff6b6b; color: white; }
+        .blue-home { background: #4dabf7; color: white; }
+        .yellow-home { background: #ffd43b; color: #333; }
+        .green-home { background: #51cf66; color: white; }
+
+        .red-path { background: #ffe0e0; border: 2px solid #ff6b6b; }
+        .blue-path { background: #e0f0ff; border: 2px solid #4dabf7; }
+        .yellow-path { background: #fff5e0; border: 2px solid #ffd43b; }
+        .green-path { background: #e0ffe0; border: 2px solid #51cf66; }
+
+        .normal-path { background: #f8f9fa; border: 1px solid #dee2e6; }
+        .safe-zone { background: #e7f5ff; border: 2px solid #339af0; }
+
+        .piece {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            position: absolute;
+            transition: all 0.5s ease;
+            z-index: 10;
+            border: 2px solid #333;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+        }
+
+        .piece:hover {
+            transform: scale(1.1);
+        }
+
+        .piece.red { background: radial-gradient(circle, #ff8787, #ff6b6b); }
+        .piece.blue { background: radial-gradient(circle, #74c0fc, #4dabf7); }
+        .piece.yellow { background: radial-gradient(circle, #ffe066, #ffd43b); }
+        .piece.green { background: radial-gradient(circle, #8ce99a, #51cf66); }
+
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .dice-container {
+            text-align: center;
+        }
+
+        .dice {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border: 3px solid #333;
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 36px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 auto 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .dice:hover {
+            transform: scale(1.05);
+        }
+
+        .dice.rolling {
+            animation: roll 0.5s ease-in-out;
+        }
+
+        @keyframes roll {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.2); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+
+        .player-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+
+        .player {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .player.active {
+            background: #e7f5ff;
+            border: 2px solid #339af0;
+            transform: scale(1.05);
+        }
+
+        .player-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .player-pieces {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .mini-piece {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 1px solid #333;
+        }
+
+        .button {
+            background: #4dabf7;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(77, 171, 247, 0.3);
+        }
+
+        .button:hover {
+            background: #339af0;
+            transform: translateY(-2px);
+        }
+
+        .message {
+            text-align: center;
+            padding: 15px;
+            background: #e7f5ff;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .winner-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .winner-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-30px); }
+            60% { transform: translateY(-15px); }
+        }
+
+        .winner-text {
+            font-size: 36px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .game-board {
+                grid-template-columns: repeat(15, 25px);
+                grid-template-rows: repeat(15, 25px);
+            }
+            
+            .cell {
+                width: 25px;
+                height: 25px;
+                font-size: 10px;
+            }
+            
+            .piece {
+                width: 20px;
+                height: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎲 飞行棋游戏 🎯</h1>
+        
+        <div class="message" id="message">欢迎来到飞行棋游戏！红色玩家先开始</div>
+        
+        <div class="player-info">
+            <div class="player" id="player-red" data-player="red">
+                <div class="player-name">红色玩家</div>
+                <div class="player-pieces">
+                    <div class="mini-piece red"></div>
+                    <div class="mini-piece red"></div>
+                    <div class="mini-piece red"></div>
+                    <div class="mini-piece red"></div>
+                </div>
+            </div>
+            
+            <div class="player" id="player-blue" data-player="blue">
+                <div class="player-name">蓝色玩家</div>
+                <div class="player-pieces">
+                    <div class="mini-piece blue"></div>
+                    <div class="mini-piece blue"></div>
+                    <div class="mini-piece blue"></div>
+                    <div class="mini-piece blue"></div>
+                </div>
+            </div>
+            
+            <div class="player" id="player-yellow" data-player="yellow">
+                <div class="player-name">黄色玩家</div>
+                <div class="player-pieces">
+                    <div class="mini-piece yellow"></div>
+                    <div class="mini-piece yellow"></div>
+                    <div class="mini-piece yellow"></div>
+                    <div class="mini-piece yellow"></div>
+                </div>
+            </div>
+            
+            <div class="player" id="player-green" data-player="green">
+                <div class="player-name">绿色玩家</div>
+                <div class="player-pieces">
+                    <div class="mini-piece green"></div>
+                    <div class="mini-piece green"></div>
+                    <div class="mini-piece green"></div>
+                    <div class="mini-piece green"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <div class="dice-container">
+                <div class="dice" id="dice">🎲</div>
+                <button class="button" id="rollButton">掷骰子</button>
+            </div>
+            <button class="button" id="newGameButton">新游戏</button>
+        </div>
+        
+        <div class="game-board" id="gameBoard"></div>
+    </div>
+    
+    <div class="winner-modal" id="winnerModal">
+        <div class="winner-content">
+            <div class="winner-text" id="winnerText">🎉 恭喜获胜！</div>
+            <button class="button" id="playAgainButton">再玩一局</button>
+        </div>
+    </div>
+
+    <script>
+        class LudoGame {
+            constructor() {
+                this.board = [];
+                this.players = {
+                    red: { pieces: [], start: 0, home: [], color: 'red' },
+                    blue: { pieces: [], start: 13, home: [], color: 'blue' },
+                    yellow: { pieces: [], start: 26, home: [], color: 'yellow' },
+                    green: { pieces: [], start: 39, home: [], color: 'green' }
+                };
+                this.currentPlayer = 'red';
+                this.diceValue = 0;
+                this.selectedPiece = null;
+                this.gameStarted = false;
+                this.initializeBoard();
+                this.initializePieces();
+                this.renderBoard();
+                this.bindEvents();
+                this.updatePlayerDisplay();
+            }
+
+            initializeBoard() {
+                // 创建15x15的棋盘
+                for (let row = 0; row < 15; row++) {
+                    this.board[row] = [];
+                    for (let col = 0; col < 15; col++) {
+                        this.board[row][col] = { type: 'normal', color: null, pieces: [] };
+                    }
+                }
+
+                // 设置飞行路径（简化版）
+                this.setupPaths();
+                
+                // 设置家区域
+                this.setupHomeAreas();
+                
+                // 设置安全区
+                this.setupSafeZones();
+            }
+
+            setupPaths() {
+                // 主路径 - 简化的环形路径
+                const mainPath = [
+                    // 上边
+                    [6, 1], [6, 2], [6, 3], [6, 4], [6, 5],
+                    // 右上
+                    [5, 6], [4, 6], [3, 6], [2, 6], [1, 6],
+                    // 右边
+                    [0, 8], [1, 8], [2, 8], [3, 8], [4, 8], [5, 8],
+                    // 右下
+                    [6, 9], [6, 10], [6, 11], [6, 12], [6, 13],
+                    // 下边
+                    [8, 13], [8, 12], [8, 11], [8, 10], [8, 9],
+                    // 左下
+                    [9, 8], [10, 8], [11, 8], [12, 8], [13, 8],
+                    // 左边
+                    [14, 6], [13, 6], [12, 6], [11, 6], [10, 6], [9, 6],
+                    // 左上
+                    [8, 5], [8, 4], [8, 3], [8, 2], [8, 1],
+                    // 回到起点附近
+                    [7, 6]
+                ];
+
+                mainPath.forEach(([row, col], index) => {
+                    if (this.board[row] && this.board[row][col]) {
+                        this.board[row][col].type = 'path';
+                        this.board[row][col].pathIndex = index;
+                        
+                        // 设置各颜色的路径段
+                        if (index >= 0 && index < 13) this.board[row][col].color = 'red';
+                        else if (index >= 13 && index < 26) this.board[row][col].color = 'blue';
+                        else if (index >= 26 && index < 39) this.board[row][col].color = 'yellow';
+                        else if (index >= 39 && index < 52) this.board[row][col].color = 'green';
+                    }
+                });
+
+                // 设置终点路径（每个颜色6格）
+                this.setupFinalPaths();
+            }
+
+            setupFinalPaths() {
+                // 红色终点路径
+                const redFinal = [[1, 6], [2, 6], [3, 6], [4, 6], [5, 6], [6, 6]];
+                redFinal.forEach(([row, col], index) => {
+                    this.board[row][col].type = 'final';
+                    this.board[row][col].color = 'red';
+                    this.board[row][col].finalIndex = index;
+                });
+
+                // 蓝色终点路径
+                const blueFinal = [[8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 6]];
+                blueFinal.forEach(([row, col], index) => {
+                    this.board[row][col].type = 'final';
+                    this.board[row][col].color = 'blue';
+                    this.board[row][col].finalIndex = index;
+                });
+
+                // 黄色终点路径
+                const yellowFinal = [[13, 8], [12, 8], [11, 8], [10, 8], [9, 8], [8, 8]];
+                yellowFinal.forEach(([row, col], index) => {
+                    this.board[row][col].type = 'final';
+                    this.board[row][col].color = 'yellow';
+                    this.board[row][col].finalIndex = index;
+                });
+
+                // 绿色终点路径
+                const greenFinal = [[6, 13], [6, 12], [6, 11], [6, 10], [6, 9], [6, 8]];
+                greenFinal.forEach(([row, col], index) => {
+                    this.board[row][col].type = 'final';
+                    this.board[row][col].color = 'green';
+                    this.board[row][col].finalIndex = index;
+                });
+            }
+
+            setupHomeAreas() {
+                // 红色家区域
+                const redHome = [[1, 1], [1, 2], [2, 1], [2, 2]];
+                redHome.forEach(([row, col]) => {
+                    this.board[row][col].type = 'home';
+                    this.board[row][col].color = 'red';
+                });
+
+                // 蓝色家区域
+                const blueHome = [[1, 12], [1, 13], [2, 12], [2, 13]];
+                blueHome.forEach(([row, col]) => {
+                    this.board[row][col].type = 'home';
+                    this.board[row][col].color = 'blue';
+                });
+
+                // 黄色家区域
+                const yellowHome = [[12, 12], [12, 13], [13, 12], [13, 13]];
+                yellowHome.forEach(([row, col]) => {
+                    this.board[row][col].type = 'home';
+                    this.board[row][col].color = 'yellow';
+                });
+
+                // 绿色家区域
+                const greenHome = [[12, 1], [12, 2], [13, 1], [13, 2]];
+                greenHome.forEach(([row, col]) => {
+                    this.board[row][col].type = 'home';
+                    this.board[row][col].color = 'green';
+                });
+            }
+
+            setupSafeZones() {
+                // 设置一些安全区
+                const safeZones = [[6, 6], [8, 6], [8, 8], [6, 8]];
+                safeZones.forEach(([row, col]) => {
+                    if (this.board[row] && this.board[row][col]) {
+                        this.board[row][col].type = 'safe';
+                    }
+                });
+            }
+
+            initializePieces() {
+                // 为每个玩家初始化4个棋子
+                Object.keys(this.players).forEach(color => {
+                    const homePositions = this.getHomePositions(color);
+                    for (let i = 0; i < 4; i++) {
+                        this.players[color].pieces.push({
+                            id: `${color}-${i}`,
+                            position: homePositions[i],
+                            isHome: true,
+                            isFinished: false,
+                            pathPosition: -1
+                        });
+                    }
+                });
+            }
+
+            getHomePositions(color) {
+                const positions = {
+                    red: [[1, 1], [1, 2], [2, 1], [2, 2]],
+                    blue: [[1, 12], [1, 13], [2, 12], [2, 13]],
+                    yellow: [[12, 12], [12, 13], [13, 12], [13, 13]],
+                    green: [[12, 1], [12, 2], [13, 1], [13, 2]]
+                };
+                return positions[color];
+            }
+
+            renderBoard() {
+                const boardElement = document.getElementById('gameBoard');
+                boardElement.innerHTML = '';
+
+                for (let row = 0; row < 15; row++) {
+                    for (let col = 0; col < 15; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+
+                        const cellData = this.board[row][col];
+                        
+                        // 设置单元格样式
+                        if (cellData.type === 'home') {
+                            cell.classList.add(`${cellData.color}-home`);
+                        } else if (cellData.type === 'path') {
+                            cell.classList.add(`${cellData.color}-path`);
+                        } else if (cellData.type === 'final') {
+                            cell.classList.add(`${cellData.color}-path`);
+                        } else if (cellData.type === 'safe') {
+                            cell.classList.add('safe-zone');
+                        } else {
+                            cell.classList.add('normal-path');
+                        }
+
+                        // 添加棋子
+                        this.addPiecesToCell(cell, row, col);
+                        
+                        boardElement.appendChild(cell);
+                    }
+                }
+            }
+
+            addPiecesToCell(cell, row, col) {
+                Object.keys(this.players).forEach(color => {
+                    this.players[color].pieces.forEach(piece => {
+                        if (piece.position[0] === row && piece.position[1] === col) {
+                            const pieceElement = document.createElement('div');
+                            pieceElement.className = `piece ${color}`;
+                            pieceElement.dataset.pieceId = piece.id;
+                            pieceElement.dataset.color = color;
+                            cell.appendChild(pieceElement);
+                        }
+                    });
+                });
+            }
+
+            bindEvents() {
+                document.getElementById('rollButton').addEventListener('click', () => this.rollDice());
+                document.getElementById('newGameButton').addEventListener('click', () => this.newGame());
+                document.getElementById('playAgainButton').addEventListener('click', () => this.newGame());
+                
+                // 棋子点击事件
+                document.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('piece')) {
+                        this.selectPiece(e.target);
+                    }
+                });
+            }
+
+            rollDice() {
+                if (this.gameStarted) return;
+                
+                const diceElement = document.getElementById('dice');
+                diceElement.classList.add('rolling');
+                
+                setTimeout(() => {
+                    this.diceValue = Math.floor(Math.random() * 6) + 1;
+                    diceElement.textContent = this.diceValue;
+                    diceElement.classList.remove('rolling');
+                    
+                    this.gameStarted = true;
+                    this.updateMessage(`${this.getPlayerName(this.currentPlayer)} 掷出了 ${this.diceValue} 点！请选择要移动的棋子`);
+                    
+                    // 检查是否有可移动的棋子
+                    if (!this.hasMovablePieces()) {
+                        this.updateMessage(`${this.getPlayerName(this.currentPlayer)} 没有可移动的棋子`);
+                        setTimeout(() => this.nextTurn(), 2000);
+                    }
+                }, 500);
+            }
+
+            hasMovablePieces() {
+                const player = this.players[this.currentPlayer];
+                return player.pieces.some(piece => this.canMovePiece(piece));
+            }
+
+            canMovePiece(piece) {
+                if (piece.isFinished) return false;
+                
+                if (piece.isHome && this.diceValue !== 6) return false;
+                
+                return true;
+            }
+
+            selectPiece(pieceElement) {
+                if (!this.gameStarted) return;
+                
+                const pieceId = pieceElement.dataset.pieceId;
+                const color = pieceElement.dataset.color;
+                
+                if (color !== this.currentPlayer) {
+                    this.updateMessage('不是你的回合！');
+                    return;
+                }
+                
+                const piece = this.findPiece(pieceId);
+                if (!piece || !this.canMovePiece(piece)) {
+                    this.updateMessage('这个棋子不能移动！');
+                    return;
+                }
+                
+                this.movePiece(piece);
+            }
+
+            findPiece(pieceId) {
+                for (let color in this.players) {
+                    const piece = this.players[color].pieces.find(p => p.id === pieceId);
+                    if (piece) return piece;
+                }
+                return null;
+            }
+
+            movePiece(piece) {
+                if (piece.isHome) {
+                    // 从家出发
+                    piece.isHome = false;
+                    piece.pathPosition = this.players[this.currentPlayer].start;
+                    piece.position = this.getPositionFromPathIndex(piece.pathPosition);
+                } else {
+                    // 在路径上移动
+                    piece.pathPosition += this.diceValue;
+                    
+                    // 检查是否进入终点路径
+                    if (piece.pathPosition >= 52) {
+                        const finalIndex = piece.pathPosition - 52;
+                        if (finalIndex < 6) {
+                            piece.position = this.getFinalPosition(this.currentPlayer, finalIndex);
+                        } else {
+                            // 超过终点，回到原位
+                            piece.pathPosition -= this.diceValue;
+                            this.updateMessage('移动超出终点范围！');
+                            return;
+                        }
+                    } else {
+                        piece.position = this.getPositionFromPathIndex(piece.pathPosition);
+                    }
+                }
+                
+                // 检查是否到达终点
+                if (this.checkWin(piece)) {
+                    piece.isFinished = true;
+                    this.updateMessage(`${this.getPlayerName(this.currentPlayer)} 的一个棋子到达终点！`);
+                }
+                
+                // 检查是否吃掉对手棋子
+                this.checkCapture(piece);
+                
+                this.renderBoard();
+                
+                // 如果掷出6，可以再掷一次
+                if (this.diceValue === 6) {
+                    this.gameStarted = false;
+                    this.updateMessage(`${this.getPlayerName(this.currentPlayer)} 掷出了6，可以再掷一次！`);
+                } else {
+                    setTimeout(() => this.nextTurn(), 1500);
+                }
+            }
+
+            getPositionFromPathIndex(index) {
+                const pathPositions = [
+                    [6, 1], [6, 2], [6, 3], [6, 4], [6, 5],
+                    [5, 6], [4, 6], [3, 6], [2, 6], [1, 6],
+                    [0, 8], [1, 8], [2, 8], [3, 8], [4, 8], [5, 8],
+                    [6, 9], [6, 10], [6, 11], [6, 12], [6, 13],
+                    [8, 13], [8, 12], [8, 11], [8, 10], [8, 9],
+                    [9, 8], [10, 8], [11, 8], [12, 8], [13, 8],
+                    [14, 6], [13, 6], [12, 6], [11, 6], [10, 6], [9, 6],
+                    [8, 5], [8, 4], [8, 3], [8, 2], [8, 1],
+                    [7, 6]
+                ];
+                return pathPositions[index % pathPositions.length];
+            }
+
+            getFinalPosition(color, index) {
+                const finalPaths = {
+                    red: [[1, 6], [2, 6], [3, 6], [4, 6], [5, 6], [6, 6]],
+                    blue: [[8, 1], [8, 2], [8, 3], [8, 4], [8, 5], [8, 6]],
+                    yellow: [[13, 8], [12, 8], [11, 8], [10, 8], [9, 8], [8, 8]],
+                    green: [[6, 13], [6, 12], [6, 11], [6, 10], [6, 9], [6, 8]]
+                };
+                return finalPaths[color][index];
+            }
+
+            checkCapture(movingPiece) {
+                if (movingPiece.isFinished || movingPiece.isHome) return;
+                
+                Object.keys(this.players).forEach(color => {
+                    if (color === this.currentPlayer) return;
+                    
+                    this.players[color].pieces.forEach(piece => {
+                        if (!piece.isHome && !piece.isFinished && 
+                            piece.position[0] === movingPiece.position[0] && 
+                            piece.position[1] === movingPiece.position[1]) {
+                            // 吃掉对手棋子
+                            piece.isHome = true;
+                            piece.pathPosition = -1;
+                            piece.position = this.getHomePositions(color)[parseInt(piece.id.split('-')[1])];
+                            this.updateMessage(`${this.getPlayerName(this.currentPlayer)} 吃掉了 ${this.getPlayerName(color)} 的棋子！`);
+                        }
+                    });
+                });
+            }
+
+            checkWin(piece) {
+                return piece.pathPosition === 57; // 到达最终终点
+            }
+
+            nextTurn() {
+                const players = ['red', 'blue', 'yellow', 'green'];
+                const currentIndex = players.indexOf(this.currentPlayer);
+                this.currentPlayer = players[(currentIndex + 1) % 4];
+                
+                this.gameStarted = false;
+                this.diceValue = 0;
+                document.getElementById('dice').textContent = '🎲';
+                
+                this.updatePlayerDisplay();
+                this.updateMessage(`${this.getPlayerName(this.currentPlayer)} 的回合，请掷骰子`);
+                
+                // 检查是否获胜
+                if (this.checkGameWin()) {
+                    this.showWinner();
+                }
+            }
+
+            checkGameWin() {
+                return this.players[this.currentPlayer].pieces.every(piece => piece.isFinished);
+            }
+
+            showWinner() {
+                const winnerModal = document.getElementById('winnerModal');
+                const winnerText = document.getElementById('winnerText');
+                winnerText.textContent = `🎉 ${this.getPlayerName(this.currentPlayer)} 获胜！`;
+                winnerModal.style.display = 'flex';
+            }
+
+            getPlayerName(color) {
+                const names = {
+                    red: '红色玩家',
+                    blue: '蓝色玩家',
+                    yellow: '黄色玩家',
+                    green: '绿色玩家'
+                };
+                return names[color];
+            }
+
+            updatePlayerDisplay() {
+                document.querySelectorAll('.player').forEach(player => {
+                    player.classList.remove('active');
+                    if (player.dataset.player === this.currentPlayer) {
+                        player.classList.add('active');
+                    }
+                });
+            }
+
+            updateMessage(message) {
+                document.getElementById('message').textContent = message;
+            }
+
+            newGame() {
+                this.currentPlayer = 'red';
+                this.gameStarted = false;
+                this.diceValue = 0;
+                
+                // 重置所有棋子
+                Object.keys(this.players).forEach(color => {
+                    const homePositions = this.getHomePositions(color);
+                    this.players[color].pieces.forEach((piece, index) => {
+                        piece.position = homePositions[index];
+                        piece.isHome = true;
+                        piece.isFinished = false;
+                        piece.pathPosition = -1;
+                    });
+                });
+                
+                document.getElementById('dice').textContent = '🎲';
+                document.getElementById('winnerModal').style.display = 'none';
+                
+                this.renderBoard();
+                this.updatePlayerDisplay();
+                this.updateMessage('新游戏开始！红色玩家先开始');
+            }
+        }
+
+        // 启动游戏
+        document.addEventListener('DOMContentLoaded', () => {
+            new LudoGame();
+        });
+    </script>
+</body>
+</html>
