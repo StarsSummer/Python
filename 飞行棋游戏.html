@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飞行棋游戏</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .game-title {
+            color: white;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        .game-container {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .board {
+            width: 600px;
+            height: 600px;
+            background: #f0f0f0;
+            border: 3px solid #333;
+            border-radius: 10px;
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr);
+            gap: 1px;
+        }
+        
+        .cell {
+            background: white;
+            border: 1px solid #ddd;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .cell:hover {
+            background: #f5f5f5;
+            transform: scale(1.05);
+        }
+        
+        .path {
+            background: #fff9c4;
+            border-color: #f9a825;
+        }
+        
+        .red-path {
+            background: #ffcdd2;
+            border-color: #c62828;
+        }
+        
+        .blue-path {
+            background: #bbdefb;
+            border-color: #1976d2;
+        }
+        
+        .yellow-path {
+            background: #fff9c4;
+            border-color: #fbc02d;
+        }
+        
+        .green-path {
+            background: #c8e6c9;
+            border-color: #388e3c;
+        }
+        
+        .home {
+            background: #e1f5fe;
+            border: 2px solid #0288d1;
+            border-radius: 50%;
+        }
+        
+        .start {
+            background: #f3e5f5;
+            border: 2px solid #7b1fa2;
+            border-radius: 50%;
+        }
+        
+        .finish {
+            background: #e8f5e8;
+            border: 2px solid #2e7d32;
+            border-radius: 50%;
+        }
+        
+        .piece {
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            position: absolute;
+            border: 2px solid #333;
+            transition: all 0.5s ease;
+            z-index: 10;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        
+        .piece:hover {
+            transform: scale(1.2);
+        }
+        
+        .piece.red {
+            background: radial-gradient(circle at 30% 30%, #ff6b6b, #c62828);
+        }
+        
+        .piece.blue {
+            background: radial-gradient(circle at 30% 30%, #64b5f6, #1976d2);
+        }
+        
+        .piece.yellow {
+            background: radial-gradient(circle at 30% 30%, #ffd93d, #fbc02d);
+        }
+        
+        .piece.green {
+            background: radial-gradient(circle at 30% 30%, #81c784, #388e3c);
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            min-width: 250px;
+        }
+        
+        .player-info {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        
+        .player-name {
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        .player-piece {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 5px;
+            border: 2px solid #333;
+        }
+        
+        .dice-container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        
+        .dice {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border: 3px solid #333;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            font-weight: bold;
+            margin: 0 auto 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        
+        .dice:hover {
+            transform: scale(1.1);
+        }
+        
+        .dice.rolling {
+            animation: roll 0.5s ease-in-out;
+        }
+        
+        @keyframes roll {
+            0% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(180deg) scale(1.2); }
+            100% { transform: rotate(360deg) scale(1); }
+        }
+        
+        .roll-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1.1em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+        
+        .roll-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+        }
+        
+        .roll-btn:active {
+            transform: translateY(0);
+        }
+        
+        .roll-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .game-status {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .winner-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .winner-message h2 {
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+        
+        .restart-btn {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1.1em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .restart-btn:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <h1 class="game-title">🎲 飞行棋游戏 🎯</h1>
+    
+    <div class="game-container">
+        <div class="board" id="gameBoard"></div>
+        
+        <div class="controls">
+            <div class="player-info" id="playerInfo">
+                <div class="player-name">当前玩家: <span id="currentPlayer">红色</span></div>
+                <div>
+                    <span class="player-piece" style="background: radial-gradient(circle at 30% 30%, #ff6b6b, #c62828);"></span>
+                    <span>红色玩家</span>
+                </div>
+                <div>
+                    <span class="player-piece" style="background: radial-gradient(circle at 30% 30%, #64b5f6, #1976d2);"></span>
+                    <span>蓝色玩家</span>
+                </div>
+                <div>
+                    <span class="player-piece" style="background: radial-gradient(circle at 30% 30%, #ffd93d, #fbc02d);"></span>
+                    <span>黄色玩家</span>
+                </div>
+                <div>
+                    <span class="player-piece" style="background: radial-gradient(circle at 30% 30%, #81c784, #388e3c);"></span>
+                    <span>绿色玩家</span>
+                </div>
+            </div>
+            
+            <div class="dice-container">
+                <div class="dice" id="dice">🎲</div>
+                <button class="roll-btn" id="rollBtn">掷骰子</button>
+            </div>
+            
+            <div class="game-status" id="gameStatus">
+                游戏开始！红色玩家先手
+            </div>
+        </div>
+    </div>
+    
+    <div class="winner-message" id="winnerMessage">
+        <h2 id="winnerText">🎉 恭喜获胜！</h2>
+        <button class="restart-btn" onclick="restartGame()">重新开始</button>
+    </div>
+    
+    <script>
+        class FlyingChessGame {
+            constructor() {
+                this.board = document.getElementById('gameBoard');
+                this.dice = document.getElementById('dice');
+                this.rollBtn = document.getElementById('rollBtn');
+                this.currentPlayerSpan = document.getElementById('currentPlayer');
+                this.gameStatus = document.getElementById('gameStatus');
+                this.winnerMessage = document.getElementById('winnerMessage');
+                this.winnerText = document.getElementById('winnerText');
+                
+                this.currentPlayer = 0;
+                this.players = ['红色', '蓝色', '黄色', '绿色'];
+                this.playerColors = ['red', 'blue', 'yellow', 'green'];
+                this.diceValue = 0;
+                this.gameStarted = false;
+                this.isRolling = false;
+                
+                this.boardPositions = [];
+                this.pieces = {};
+                this.playerPositions = {};
+                
+                this.initGame();
+            }
+            
+            initGame() {
+                this.createBoard();
+                this.initializePieces();
+                this.bindEvents();
+                this.gameStarted = true;
+            }
+            
+            createBoard() {
+                this.board.innerHTML = '';
+                
+                // 创建棋盘格子
+                for (let row = 0; row < 15; row++) {
+                    for (let col = 0; col < 15; col++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.row = row;
+                        cell.dataset.col = col;
+                        
+                        // 定义飞行棋路径
+                        if (this.isPathCell(row, col)) {
+                            cell.classList.add('path');
+                            cell.dataset.pathType = this.getPathType(row, col);
+                        }
+                        
+                        // 特殊格子
+                        if (this.isHomeCell(row, col)) {
+                            cell.classList.add('home');
+                        } else if (this.isStartCell(row, col)) {
+                            cell.classList.add('start');
+                        } else if (this.isFinishCell(row, col)) {
+                            cell.classList.add('finish');
+                        }
+                        
+                        this.board.appendChild(cell);
+                    }
+                }
+            }
+            
+            isPathCell(row, col) {
+                // 简化的飞行棋路径定义
+                return (row === 6 || row === 8 || col === 6 || col === 8) ||
+                       (row === 7 && col >= 1 && col <= 13) ||
+                       (col === 7 && row >= 1 && row <= 13);
+            }
+            
+            getPathType(row, col) {
+                // 根据位置返回路径类型
+                if (row === 6 && col < 7) return 'red-path';
+                if (col === 6 && row < 7) return 'blue-path';
+                if (row === 8 && col > 7) return 'yellow-path';
+                if (col === 8 && row > 7) return 'green-path';
+                return 'path';
+            }
+            
+            isHomeCell(row, col) {
+                return (row === 1 && col === 1) || (row === 1 && col === 13) ||
+                       (row === 13 && col === 1) || (row === 13 && col === 13);
+            }
+            
+            isStartCell(row, col) {
+                return (row === 6 && col === 1) || (row === 1 && col === 8) ||
+                       (row === 8 && col === 13) || (row === 13 && col === 6);
+            }
+            
+            isFinishCell(row, col) {
+                return (row === 7 && col === 7);
+            }
+            
+            initializePieces() {
+                // 初始化每个玩家的棋子
+                this.playerColors.forEach((color, playerIndex) => {
+                    this.pieces[color] = [];
+                    this.playerPositions[color] = [];
+                    
+                    // 每个玩家4个棋子
+                    for (let i = 0; i < 4; i++) {
+                        const piece = document.createElement('div');
+                        piece.className = `piece ${color}`;
+                        piece.dataset.player = playerIndex;
+                        piece.dataset.pieceIndex = i;
+                        
+                        // 设置初始位置（在家）
+                        const homePosition = this.getHomePosition(playerIndex, i);
+                        piece.style.left = homePosition.left + 'px';
+                        piece.style.top = homePosition.top + 'px';
+                        
+                        this.board.appendChild(piece);
+                        this.pieces[color].push(piece);
+                        this.playerPositions[color].push(-1); // -1表示在家
+                    }
+                });
+            }
+            
+            getHomePosition(playerIndex, pieceIndex) {
+                const homePositions = [
+                    [{left: 20, top: 20}, {left: 60, top: 20}, {left: 20, top: 60}, {left: 60, top: 60}], // 红色
+                    [{left: 520, top: 20}, {left: 560, top: 20}, {left: 520, top: 60}, {left: 560, top: 60}], // 蓝色
+                    [{left: 520, top: 520}, {left: 560, top: 520}, {left: 520, top: 560}, {left: 560, top: 560}], // 黄色
+                    [{left: 20, top: 520}, {left: 60, top: 520}, {left: 20, top: 560}, {left: 60, top: 560}]  // 绿色
+                ];
+                
+                return homePositions[playerIndex][pieceIndex];
+            }
+            
+            bindEvents() {
+                this.rollBtn.addEventListener('click', () => this.rollDice());
+            }
+            
+            rollDice() {
+                if (this.isRolling) return;
+                
+                this.isRolling = true;
+                this.rollBtn.disabled = true;
+                this.dice.classList.add('rolling');
+                
+                // 骰子动画
+                let rollCount = 0;
+                const rollInterval = setInterval(() => {
+                    this.diceValue = Math.floor(Math.random() * 6) + 1;
+                    this.dice.textContent = this.diceValue;
+                    rollCount++;
+                    
+                    if (rollCount > 10) {
+                        clearInterval(rollInterval);
+                        this.dice.classList.remove('rolling');
+                        this.isRolling = false;
+                        this.handleDiceResult();
+                    }
+                }, 100);
+            }
+            
+            handleDiceResult() {
+                const currentColor = this.playerColors[this.currentPlayer];
+                const gameStatusText = `${this.players[this.currentPlayer]}掷出了${this.diceValue}点！`;
+                this.gameStatus.textContent = gameStatusText;
+                
+                // 自动移动第一个可移动的棋子
+                this.movePiece(currentColor);
+            }
+            
+            movePiece(color) {
+                const pieces = this.pieces[color];
+                const positions = this.playerPositions[color];
+                
+                // 找到第一个可以移动的棋子
+                for (let i = 0; i < pieces.length; i++) {
+                    if (this.canMovePiece(positions[i])) {
+                        this.animatePieceMove(pieces[i], positions[i], this.diceValue);
+                        positions[i] += this.diceValue;
+                        
+                        // 检查是否获胜
+                        if (this.checkWin(color)) {
+                            this.showWinner(color);
+                            return;
+                        }
+                        
+                        // 切换到下一个玩家
+                        setTimeout(() => this.nextPlayer(), 1000);
+                        return;
+                    }
+                }
+                
+                // 如果没有可移动的棋子，直接切换玩家
+                setTimeout(() => this.nextPlayer(), 1000);
+            }
+            
+            canMovePiece(position) {
+                // 简化规则：所有棋子都可以移动
+                return true;
+            }
+            
+            animatePieceMove(piece, fromPosition, steps) {
+                // 简化的移动动画
+                const toPosition = fromPosition + steps;
+                const targetCell = this.getBoardPosition(toPosition);
+                
+                if (targetCell) {
+                    piece.style.left = targetCell.left + 'px';
+                    piece.style.top = targetCell.top + 'px';
+                }
+            }
+            
+            getBoardPosition(position) {
+                // 简化的位置计算
+                const cells = this.board.querySelectorAll('.path, .start, .finish');
+                if (position >= 0 && position < cells.length) {
+                    const cell = cells[position];
+                    const rect = cell.getBoundingClientRect();
+                    const boardRect = this.board.getBoundingClientRect();
+                    return {
+                        left: rect.left - boardRect.left + rect.width / 2 - 12,
+                        top: rect.top - boardRect.top + rect.height / 2 - 12
+                    };
+                }
+                return null;
+            }
+            
+            nextPlayer() {
+                this.currentPlayer = (this.currentPlayer + 1) % 4;
+                this.currentPlayerSpan.textContent = this.players[this.currentPlayer];
+                this.currentPlayerSpan.style.color = this.playerColors[this.currentPlayer];
+                this.gameStatus.textContent = `${this.players[this.currentPlayer]}的回合`;
+                this.rollBtn.disabled = false;
+            }
+            
+            checkWin(color) {
+                // 简化的获胜条件：第一个到达终点的玩家获胜
+                const positions = this.playerPositions[color];
+                return positions.some(pos => pos >= 50); // 假设50步到达终点
+            }
+            
+            showWinner(color) {
+                const winnerIndex = this.playerColors.indexOf(color);
+                this.winnerText.textContent = `🎉 ${this.players[winnerIndex]}玩家获胜！`;
+                this.winnerMessage.style.display = 'block';
+                this.rollBtn.disabled = true;
+            }
+        }
+        
+        // 初始化游戏
+        let game;
+        window.addEventListener('DOMContentLoaded', () => {
+            game = new FlyingChessGame();
+        });
+        
+        // 重新开始游戏
+        function restartGame() {
+            document.getElementById('winnerMessage').style.display = 'none';
+            game = new FlyingChessGame();
+        }
+    </script>
+</body>
+</html>
